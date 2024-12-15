@@ -1,20 +1,16 @@
-import axios from "axios";
+import { fetchImages } from "./js/pixabay-api.js";
+import { createMarkup, showLoader, hideLoader, displayNoResultsError, displayFetchError, displayEndOfResults } from "./js/render-functions.js";
+import SimpleLightbox from "simplelightbox";
 import iziToast from "izitoast";
 import "izitoast/dist/css/iziToast.min.css";
-import SimpleLightbox from "simplelightbox";
 import "simplelightbox/dist/simple-lightbox.min.css";
 
-const form = document.querySelector(".search-form")
-const input = document.querySelector(".search-input")
-const galleryMenu = document.querySelector(".gallery")
+const form = document.querySelector(".search-form");
+const input = document.querySelector(".search-input");
+const galleryMenu = document.querySelector(".gallery");
 const loader = document.querySelector(".loader");
-const loadMore = document.querySelector(".load-more-btn")
+const loadMore = document.querySelector(".load-more-btn");
 
-form.addEventListener("submit", handleSearch)
-loadMore.addEventListener("click", onLoadMore)
-
-const API_KEY = "47599452-88585afd800a8eb35bdc3af8b";
-const BASE_URL = "https://pixabay.com/api/";
 let page = 1;
 let currentQury = "";
 let loadedHits = 0;
@@ -23,26 +19,10 @@ const lightbox = new SimpleLightbox('.gallery a', {
     captionDelay: 250,
 });
 
-async function fetchImages(currentQury = "" , page = 1) {
-    const params = new URLSearchParams({
-        key: API_KEY,
-        q: currentQury,
-        image_type: "photo",
-        orientation: "horizontal",
-        safesearch: "true",
-        page,
-        per_page: 15
-    });
-    try {
-        const response = await axios(`${BASE_URL}?${params}`)
-        console.log(response);
-        return response.data;
-    } catch (error) {
-        throw new Error(res.statusText);
-    }
-}
+form.addEventListener("submit", handleSearch);
+loadMore.addEventListener("click", onLoadMore);
 
- async function handleSearch(event) {
+async function handleSearch(event) {
     event.preventDefault();
     currentQury = input.value.trim();
 
@@ -54,106 +34,72 @@ async function fetchImages(currentQury = "" , page = 1) {
         });
         return;
     }
-    showLoader();
+    
+    page = 1;  // сброс страницы на 1 при новом запросе
 
-     galleryMenu.innerHTML = "";
-     page = 1;
-     loadedHits = 0;
-     
-     try {
-         const data = await fetchImages(currentQury); 
+    showLoader(loader);
+    galleryMenu.innerHTML = "";
+    loadedHits = 0;
+    loadMore.disabled = false;
+    loadMore.classList.add("hidden");
 
-         if (!data.hits.length) {
-             iziToast.error({
-                 message: "Sorry, there are no images matching your search query. Please try again!",
-                 position: "topRight",
-             });
-             return;
-         }
-         galleryMenu.innerHTML = createMarkup(data.hits);
-         loadedHits = data.hits.length;
-         lightbox.refresh();
+    try {
+        const data = await fetchImages(currentQury, page); 
 
-         console.log(data.hits);
-         console.log(data.totalHits);
+        if (!data.hits.length) {
+            displayNoResultsError();
+            return;
+        }
 
-         if (loadedHits < data.totalHits) {
-         loadMore.classList.remove("hidden");
-         } else {
-             loadMore.classList.add("hidden");
-         }
-         
-         
-     } catch (error) {
+        galleryMenu.innerHTML = createMarkup(data.hits);
+        loadedHits = data.hits.length;
+        lightbox.refresh();
+
+        if (loadedHits < data.totalHits) {
+            loadMore.classList.remove("hidden");
+        } else {
+            loadMore.classList.add("hidden");
+        }
+    } catch (error) {
         console.error(error);
-        iziToast.error({
-            title: "Error",
-            message: "An error occurred while fetching images. Please try again later.",
-            position: "topRight",
-        });
+        displayFetchError();
     } finally {
-        hideLoader(); 
-        form.reset(); 
-     }
-}
-function createMarkup(arr) {
-    return arr.map(({ webformatURL, largeImageURL, tags, likes, views, comments, downloads }) => {
-        return `
-            <li class="gallery-item">
-                <a class="gallery-link" href="${largeImageURL}">
-                    <img
-                        class="gallery-image"
-                        src="${webformatURL}"
-                        alt="${tags}"
-                    />
-                </a>
-                <ul class="gallery-item-categories-menu">
-                    <li class="gallery-item-categories-menu-item">
-                        <p class="categories-item-title">Likes</p>
-                        <p class="categories-item-count">${likes}</p>
-                    </li>
-                    <li class="gallery-item-categories-menu-item">
-                        <p class="categories-item-title">Views</p>
-                        <p class="categories-item-count">${views}</p>
-                    </li>
-                    <li class="gallery-item-categories-menu-item">
-                        <p class="categories-item-title">Comments</p>
-                        <p class="categories-item-count">${comments}</p>
-                    </li>
-                    <li class="gallery-item-categories-menu-item">
-                        <p class="categories-item-title">Downloads</p>
-                        <p class="categories-item-count">${downloads}</p>
-                    </li>
-                </ul>
-            </li>
-        `;
-    }).join("");
-}
-function showLoader() {
-    loader.textContent = "Loading images, please wait..."; 
-    loader.classList.remove("hidden");
-}
-
-function hideLoader() {
-    loader.classList.add("hidden");
+        hideLoader(loader);
+        form.reset();
+    }
 }
 
 async function onLoadMore() {
-        page += 1;
-        try {
-            const data = await fetchImages(currentQury, page);
-            galleryMenu.insertAdjacentHTML("beforeend", createMarkup(data.hits))
-            loadedHits += data.hits.length;
-            lightbox.refresh();
+    page += 1;
+    loadMore.disabled = true;
+    loadMore.classList.add("hidden");
+    showLoader(loader);
 
-            if (loadedHits >= data.totalHits) {
+    try {
+        const data = await fetchImages(currentQury, page);
+        galleryMenu.insertAdjacentHTML("beforeend", createMarkup(data.hits));
+        loadedHits += data.hits.length;
+        lightbox.refresh();
+
+        if (loadedHits >= data.totalHits) {
             loadMore.classList.add("hidden");
-            iziToast.info({
-                message: "We're sorry, but you've reached the end of search results.",
-                position: "topRight",
-            });
+            displayEndOfResults();
+        } else {
+            loadMore.classList.remove("hidden");
         }
-        } catch (error) {
-            alert(error.message);
-     }
+
+        const card = document.querySelector(".gallery-item");
+        const cardHeight = card.getBoundingClientRect().height;
+        window.scrollBy({
+            left: 0,
+            top: cardHeight * 2,
+            behavior: "smooth"
+        });
+
+    } catch (error) {
+        alert(error.message);
+    } finally {
+        loadMore.disabled = false;
+        hideLoader(loader);
+    }
 }

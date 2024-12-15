@@ -75,9 +75,9 @@
 }
 .gallery-item {
   box-sizing: border-box;
-  width: 300px; /* Фиксированная ширина */
-  height: 270px; /* Фиксированная высота */
-  border: 1px solid #808080; /* Рамка для ячейки */
+  width: 300px;
+  height: 270px;
+  border: 1px solid #808080;
   overflow: hidden;
 }
 .gallery-link {
@@ -96,7 +96,7 @@
 .gallery-item-categories-menu-item {
   text-align: center;
   font-size: 14px;
-  color: #000; /* Цвет текста */
+  color: #000;
 }
 .categories-item-title {
   font-family: 'Montserrat', sans-serif;
@@ -119,6 +119,28 @@
 .loader {
   text-align: center;
   margin-top: 32px;
+  margin-bottom: 44px;
+}
+
+.load-more-btn {
+  display: block;
+  margin: 0 auto;
+  background-color: #4e75ff;
+  border: none;
+  color: #fff;
+  padding: 8px 16px;
+  border-radius: 8px;
+  font-family: 'Montserrat', sans-serif;
+  font-weight: 500;
+  font-size: 16px;
+  line-height: 1.5;
+  letter-spacing: 0.04em;
+  margin-top: 32px;
+  margin-bottom: 44px;
+}
+
+.load-more-btn:hover {
+  background-color: #6c8cff;
 }
 
 .hidden {
